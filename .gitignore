@@ -1,0 +1,9 @@
+doc/*.aux
+doc/*.dvi
+doc/*.log
+doc/*.pdf
+doc/*.toc
+doc/*.bbl
+doc/*.blg
+doc/pal_test.tex
+doc/pal.tex

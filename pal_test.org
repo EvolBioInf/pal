@@ -1,0 +1,217 @@
+#+begin_src latex
+  \section{Testing}
+  Our testing program has hooks for imports and the testing logic.
+#+end_src
+#+begin_src go <<pal_test.go>>=
+  package pal
+  import (
+	  "testing"
+	  //<<Testing imports>>
+  )
+  //<<Testing>>
+#+end_src
+#+begin_src latex
+  Testing is divided in two parts, first we test the \ty{ScoreMatrix},
+  then the various types of alignment.
+#+end_src
+#+begin_src go <<Testing>>=
+  func TestScoreMatrix(t *testing.T) {
+	  //<<Test \ty{ScoreMatrix}>>
+  }
+  func TestAlignment(t *testing.T) {
+	  //<<Test alignment>>
+  }
+#+end_src
+#+begin_src latex
+  \subsection{\ty{ScoreMatrix}}
+  We run the tests for \ty{ScoreMatrix} and store the results we
+  get. Then we store the results we want and compare the two.
+#+end_src
+#+begin_src go <<Test \ty{ScoreMatrix}>>=
+  get := make([]string, 0)
+  want := make([]string, 0)
+  //<<Store what we get for \ty{ScoreMatrix}>>
+  //<<Store what we want for \ty{ScoreMatrix}>>
+  for i, g := range get {
+	  w := want[i]
+	  //<<Compare \ty{ScoreMatrix} results>>
+  }
+#+end_src
+#+begin_src latex 
+  We construct a new \ty{ScoreMatrix} and read the BLOSUM matrix.
+#+end_src
+#+begin_src go <<Store what we get for \ty{ScoreMatrix}>>=
+  sm := NewScoreMatrix(1, -3)
+  get = append(get, sm.String())
+  bf := "./doc/blosum62.txt"
+  f, err := os.Open(bf)
+  if err != nil {
+	  t.Errorf("can't open %q", bf)
+  }
+  defer f.Close()
+  sm = ReadScoreMatrix(f)
+  get = append(get, sm.String())
+#+end_src
+#+begin_src latex
+  We import \ty{os}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "os"
+#+end_src
+#+begin_src latex
+  For each of the two results we get, we read the result we want from
+  files \ty{sm1.txt} and \ty{sm2.txt}.
+#+end_src
+#+begin_src go <<Store what we want for \ty{ScoreMatrix}>>=
+  for i, _ := range get {
+	  f := "data/sm" + strconv.Itoa(i+1) + ".txt"
+	  b, err := ioutil.ReadFile(f)
+	  if err != nil {
+		  t.Errorf("can't open %q", f)
+	  }
+	  want = append(want, string(b))
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{strconv} and \ty{ioutil}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "strconv"
+  "io/ioutil"
+#+end_src
+#+begin_src latex
+  We compare what we get with what we want.
+#+end_src
+#+begin_src go <<Compare \ty{ScoreMatrix} results>>=
+  if g != w {
+  	t.Errorf("get:\n%s\nwant:\n%s", g, w)
+  }
+#+end_src
+#+begin_src latex
+  \subsection{\ty{Alignment}}
+#+end_src
+#+begin_src latex
+  We store the results we get when testing alignment.
+#+end_src
+#+begin_src go <<Test alignment>>=
+  get := make([]string, 0)
+  want := make([]string, 0)
+  //<<Store what we get for alignment>>
+  //<<Store what we want for alignment>>
+  for i, g := range get {
+	  w := want[i]
+	  //<<Compare alignment results>>
+  }
+#+end_src
+#+begin_src latex
+  The first test is the global alignment of two short peptides shown in
+  Figure~\ref{fig:al}. 
+#+end_src
+#+begin_src go <<Store what we get for alignment>>=
+  bf := "./doc/blosum62.txt"
+  f, err := os.Open(bf)
+  if err != nil {
+	  t.Errorf("can't open %q", bf)
+  }
+  defer f.Close()
+  sm := ReadScoreMatrix(f)
+  q := fasta.NewSequence("Q", []byte("MKFLALF"))
+  s := fasta.NewSequence("S", []byte("MKYLILLF"))
+  a := NewGlobalAlignment(q, s, sm, -5, -2)
+  a.Align()
+  get = append(get, a.String() + "\n")
+#+end_src
+#+begin_src latex
+  We import \ty{fasta}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "github.com/evolbioinf/fasta"
+#+end_src
+#+begin_src latex
+  The second test is the overlap alignment of two DNA sequences.
+#+end_src
+#+begin_src go <<Store what we get for alignment>>=
+  s1 := "CATTGGGATGATGCACCTATATTGTGAGGTCTGTTACACTG" +
+	  "TCGTTCCGCAGATCGAGCAATCCCGTATCCTTTACATAT" +
+	  "TGCCGTGTGGGGTAAGGTGC"
+  s2 := "TTGTGAGGTCTGTTACACTGTCCGCAGATCGAGCAATCC" +
+	  "CGTATCCTTTACATATTGCCGTGTGGGGTAAGGTGCC" +
+	  "ATTGGGATGATGCACCTATA"
+  q = fasta.NewSequence("Q", []byte(s1))
+  s = fasta.NewSequence("S", []byte(s2))
+  sm = NewScoreMatrix(1, -3)
+  o := NewOverlapAlignment(q, s, sm, -5, -2)
+  o.Align()
+  get = append(get, o.String() + "\n")
+#+end_src
+#+begin_src latex
+  In the third and last test we compute the first two local alignments
+  of two \emph{Adh} sequences from \emph{Drosophila}.
+#+end_src
+#+begin_src go <<Store what we get for alignment>>=
+  //<<Read query \emph{Adh} sequence>>
+  //<<Read subject \emph{Adh} sequence>>
+  //<<Calculate two local alignments>>
+#+end_src
+#+begin_src latex
+  The query \emph{Adh} sequence is contained in \ty{dmAdhAdhdup.fasta}.
+#+end_src
+#+begin_src go <<Read query \emph{Adh} sequence>>=
+  fn := "data/dmAdhAdhdup.fasta"
+  f, err = os.Open(fn)
+  if err != nil {
+	  t.Errorf("can't open %q", fn)
+  }
+  defer f.Close()
+  sc := fasta.NewScanner(f)
+  sc.ScanSequence()
+  q = sc.Sequence()
+#+end_src
+#+begin_src latex
+  The subject \emph{Adh} sequence is contained in \ty{dgAdhAdhdup.fasta}.
+#+end_src
+#+begin_src go <<Read subject \emph{Adh} sequence>>=
+  fn = "data/dgAdhAdhdup.fasta"
+  f, err = os.Open(fn)
+  if err != nil {
+	  t.Errorf("can't open %q", fn)
+  }
+  defer f.Close()
+  sc = fasta.NewScanner(f)
+  sc.ScanSequence()
+  s = sc.Sequence()
+#+end_src
+#+begin_src latex
+  We concatenate the first two alignments of the two \emph{Adh}
+  sequences.
+#+end_src
+#+begin_src go <<Calculate two local alignments>>=
+  l := NewLocalAlignment(q, s, sm, -5, -2)
+  l.Align()
+  str := l.String()
+  l.Align()
+  str +=  "\n" + l.String() + "\n"
+  get = append(get, str)
+#+end_src
+#+begin_src latex
+  The results we want are contained in files \ty{a1.txt}, \ty{a2.txt},
+  and \ty{a3.txt}.
+#+end_src
+#+begin_src go <<Store what we want for alignment>>=
+  for i, _ := range get {
+	  f := "data/a" + strconv.Itoa(i+1) + ".txt"
+	  b, err := ioutil.ReadFile(f)
+	  if err != nil {
+		  t.Errorf("can't open %q", f)
+	  }
+	  want = append(want, string(b))
+  }
+#+end_src
+#+begin_src latex
+  We compare what we get with what we want.
+#+end_src
+#+begin_src go <<Compare alignment results>>=
+  if g != w {
+        t.Errorf("get:\n%s\nwant:\n%s", g, w)
+  }
+#+end_src

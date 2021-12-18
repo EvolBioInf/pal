@@ -1,0 +1,14 @@
+Query   Q (100 residues)
+Subject S (96 residues)
+Score   62
+
+
+Query   1 ---------------------CGTGGAATGGGGTGTGCCGTTATACATTTCCTATGCCCTAACGAGCTAG 49
+                               |||||||||||||||||||||||||||||||||||||||||||||||||
+Subject 1 ATATCCACGTAGTAGGGTTACCGTGGAATGGGGTGTGCCGTTATACATTTCCTATGCCCTAACGAGCTAG 70
+
+
+Query   50 ACGCCTTGCTGTCACATTGTCTGGAGTGTTATATCCACGTAGTAGGGTTAC 100
+           ||||    ||||||||||||||||||||||                     
+Subject 71 ACGC----CTGTCACATTGTCTGGAGTGTT--------------------- 96
+//

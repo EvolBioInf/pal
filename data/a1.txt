@@ -1,0 +1,9 @@
+Query   Q (7 residues)
+Subject S (8 residues)
+Score   19
+
+
+Query   1 MKFLAL-F 7
+          ||:| | |
+Subject 1 MKYLILLF 8
+//
