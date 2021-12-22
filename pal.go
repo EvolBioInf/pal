@@ -323,7 +323,7 @@ func (a *OverlapAlignment) Align() {
 	}
 	for k := j; k > 0; k-- {
 		a.sa = append(a.sa, s[k-1])
-		a.sa = append(a.sa, '-')
+		a.qa = append(a.qa, '-')
 	}
 }
 
