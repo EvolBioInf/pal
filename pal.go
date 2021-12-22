@@ -25,8 +25,8 @@ type alignment struct {
 	m          *ScoreMatrix
 	gapO, gapE float64
 	p          [][]cell
-	score      float64
 	qa, sa     []byte
+	score      float64
 	ll         int
 	qs         int
 	ss         int
@@ -131,6 +131,11 @@ func (a *alignment) new(q, s *fasta.Sequence,
 	a.sa = make([]byte, 0)
 	a.ll = fasta.DefaultLineLength
 	a.coords = make([]coordinate, 0)
+}
+
+// RawAlignment returns the aligned query and subject sequences.
+func (a *alignment) RawAlignment() (q, s []byte) {
+	return a.qa, a.sa
 }
 
 // Method String returns the alignment as a string ready for pretty printing.

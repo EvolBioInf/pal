@@ -100,7 +100,7 @@
   it consists of one long and costly gap across the first column and
   first row.
   \begin{eqnarray*}
-    p_{00}^{\rm v} & = & = p_{00}^{\rm e} + p_{00}^{\rm f} + p_{00}^{\rm
+    p_{00}^{\rm v} & = p_{00}^{\rm e} = p_{00}^{\rm f} = p_{00}^{\rm
       g} = 0\\
     p_{i0}^{\rm v} & = & p_{i0}^{\rm e} = g_{\rm o} + ig_{\rm e}; i>0\\
     p_{i0}^{\rm f} & = & p_{i0}^{\rm g} = -\infty; i>0\\
@@ -496,6 +496,30 @@
 
 #+end_src
 #+begin_src latex
+  We also need space for the trace back of the alignment. So we allocate
+  two byte slices, one for the query alignment, the other for the
+  subject alignment.
+#+end_src
+#+begin_src go <<Alignment fields>>=
+  qa, sa []byte
+#+end_src
+#+begin_src latex
+  We initialize the byte slices during alignmnet construction.
+#+end_src
+#+begin_src go <<Construct alignment>>=
+  a.qa = make([]byte, 0)
+  a.sa = make([]byte, 0)
+#+end_src
+#+begin_src latex
+  We also declare a getter for the raw alignment.
+  !\ty{RawAlignment} returns the aligned query and subject sequences.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) RawAlignment() (q, s []byte) {
+	  return a.qa, a.sa
+  }
+#+end_src
+#+begin_src latex
   \subsubsection{Method \ty{String}}
   !Method \ty{String} returns the alignment as a string ready for pretty
   !printing.
@@ -578,19 +602,19 @@
       sequences.}\label{fig:al}
   \end{figure}
 
-  For this we need access to the aligned sequences and the length of an
-  alignment line.
+  At this point we use the query and subject alignment, \ty{qa} and
+  \ty{sa}, which we have already declared. In addition, we need to know
+  the length of a line in the alignment, we declare an alignment field
+  for it.
 #+end_src
 #+begin_src go <<Alignment fields>>=
-  qa, sa []byte
   ll int
 #+end_src
 #+begin_src latex
-  We initialize the query and subject alignments, and the line length.
+  We initialize line length to the default line length of
+  FASTA-formatted sequences.
 #+end_src
 #+begin_src go <<Construct alignment>>=
-  a.qa = make([]byte, 0)
-  a.sa = make([]byte, 0)
   a.ll = fasta.DefaultLineLength
 #+end_src
 #+begin_src latex
