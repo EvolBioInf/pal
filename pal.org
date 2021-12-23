@@ -465,6 +465,20 @@
   a.gapE = gapE
 #+end_src
 #+begin_src latex
+  We also store the query and subject lengths in separate variables. We
+  declare these.
+#+end_src
+#+begin_src go <<Alignment fields>>=
+  ql, sl int
+#+end_src
+#+begin_src latex
+  And assign them.
+#+end_src
+#+begin_src go <<Construct alignment>>=
+  a.ql = len(q.Data())
+  a.sl = len(s.Data())
+#+end_src
+#+begin_src latex
   An alignment also contains a dynamic programming matrix, which
   consists of cells as described in the Introduction.
 #+end_src
@@ -568,10 +582,8 @@
 #+end_src
 #+begin_src go <<Write alignment header to tabwriter>>=
   h := a.q.Header()
-  l := len(a.q.Data())
   //<<Write number of query residues>>
   h = a.s.Header()
-  l = len(a.s.Data())
   //<<Write number of subject residues>>
   fmt.Fprintf(w, "Score\t%g\n", a.score)
   //<<Write number of errors>>
@@ -581,8 +593,8 @@
   We distinguish a single query residue from other residue counts.
 #+end_src
 #+begin_src go <<Write number of query residues>>=
-  fmt.Fprintf(w, "Query\t%s\t(%d residue", h, l)
-  if l != 1 { fmt.Fprint(w, "s") }
+  fmt.Fprintf(w, "Query\t%s\t(%d residue", h, a.ql)
+  if a.ql != 1 { fmt.Fprint(w, "s") }
   fmt.Fprint(w, ")\n")
 #+end_src
 #+begin_src latex
@@ -590,8 +602,8 @@
   counts.
 #+end_src
 #+begin_src go <<Write number of subject residues>>=
-  fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, l)
-  if l != 1 {
+  fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, a.sl)
+  if a.sl != 1 {
 	  fmt.Fprint(w, "s")
   }
   fmt.Fprint(w, ")\n")
@@ -888,6 +900,32 @@
   }
 #+end_src
 #+begin_src latex
+  \subsubsection{Method \ty{SetSubjectStart}}
+  In global/local alignments it's convenient to be able to set the start
+  of the subject sequence.
+  !\ty{SetSubjectStart} sets the start of the subject sequence, which is
+  !useful in global/local alignment.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) SetSubjectStart(s int) {
+	  a.ss = s
+  }
+#+end_src
+#+begin_src latex
+  \subsubsection{Method \ty{SetSubjectLength}}
+  In global/local alignments the subject sequence is just a fragment of
+  the subject being searched. So its convenient to be able to set the
+  subject length.
+
+  !\ty{SetSubjectLength} sets the length of the subject sequence, which
+  !is useful in global/local alignment.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) SetSubjectLength(l int) {
+	  a.sl = l
+  }
+#+end_src
+#+begin_src latex
   \subsection{Data Structure \ty{GlobalAlignment}}
   We build a global alignment from our basic alignment type.
   !\ty{GlobalAlignment} holds the global alignment of two sequences.
@@ -1176,6 +1214,45 @@
   for k := j; k > 0; k-- {
 	  a.sa = append(a.sa, s[k-1])
 	  a.qa = append(a.qa, '-')
+  }
+#+end_src
+#+begin_src latex
+  \subsubsection{Method \ty{TrimQuery}}
+  We might be interested in an alignment that is global in the query and
+  local in the subject. Such an alignment can be obtained from an overlap
+  alignment by trimming any flanking gaps the query might contain.
+  !\ty{TrimQuery} removes gaps flanking the query.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *OverlapAlignment) TrimQuery() {
+	  if len(a.qa) != len(a.sa) {
+		  log.Fatal("can't trim alignments " +
+			  "of unequal length")
+	  }
+	  //<<Trim from left>>
+	  //<<Trim from right>>
+  }
+#+end_src
+#+begin_src latex
+  While trimming from the left, we increment the subject start and
+  decrement gap count.
+#+end_src
+#+begin_src go <<Trim from left>>=
+  for a.qa[0] == '-' {
+	  a.qa = a.qa[1:]
+	  a.sa = a.sa[1:]
+	  a.ss++
+	  a.gaps--
+  }
+#+end_src
+#+begin_src latex
+  We also trim from the right and decrement the gap count.
+#+end_src
+#+begin_src go <<Trim from right>>=
+  for a.qa[len(a.qa)-1] == '-' {
+	  a.qa = a.qa[:len(a.qa)-1]
+	  a.sa = a.sa[:len(a.sa)-1]
+	  a.gaps--
   }
 #+end_src
 #+begin_src latex

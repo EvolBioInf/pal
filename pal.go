@@ -24,6 +24,7 @@ type alignment struct {
 	q, s             *fasta.Sequence
 	m                *ScoreMatrix
 	gapO, gapE       float64
+	ql, sl           int
 	p                [][]cell
 	qa, sa           []byte
 	score            float64
@@ -121,6 +122,8 @@ func (a *alignment) new(q, s *fasta.Sequence,
 	a.m = sm
 	a.gapO = gapO
 	a.gapE = gapE
+	a.ql = len(q.Data())
+	a.sl = len(s.Data())
 	m := len(a.q.Data()) + 1
 	n := len(a.s.Data()) + 1
 	a.p = make([][]cell, m)
@@ -146,16 +149,14 @@ func (a *alignment) String() string {
 	w := new(tabwriter.Writer)
 	w.Init(buffer, 1, 0, 1, ' ', 0)
 	h := a.q.Header()
-	l := len(a.q.Data())
-	fmt.Fprintf(w, "Query\t%s\t(%d residue", h, l)
-	if l != 1 {
+	fmt.Fprintf(w, "Query\t%s\t(%d residue", h, a.ql)
+	if a.ql != 1 {
 		fmt.Fprint(w, "s")
 	}
 	fmt.Fprint(w, ")\n")
 	h = a.s.Header()
-	l = len(a.s.Data())
-	fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, l)
-	if l != 1 {
+	fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, a.sl)
+	if a.sl != 1 {
 		fmt.Fprint(w, "s")
 	}
 	fmt.Fprint(w, ")\n")
@@ -265,6 +266,16 @@ func (a *alignment) Mismatches() int {
 // Gaps returns the number of gap characters in the alignment.
 func (a *alignment) Gaps() int {
 	return a.gaps
+}
+
+// SetSubjectStart sets the start of the subject sequence, which is useful in global/local alignment.
+func (a *alignment) SetSubjectStart(s int) {
+	a.ss = s
+}
+
+// SetSubjectLength sets the length of the subject sequence, which is useful in global/local alignment.
+func (a *alignment) SetSubjectLength(l int) {
+	a.sl = l
 }
 
 // Method Align computes the alignment.  We declare a set of
@@ -382,6 +393,25 @@ func (a *OverlapAlignment) Align() {
 	}
 	a.reverse()
 	a.errors()
+}
+
+// TrimQuery removes gaps flanking the query.
+func (a *OverlapAlignment) TrimQuery() {
+	if len(a.qa) != len(a.sa) {
+		log.Fatal("can't trim alignments " +
+			"of unequal length")
+	}
+	for a.qa[0] == '-' {
+		a.qa = a.qa[1:]
+		a.sa = a.sa[1:]
+		a.ss++
+		a.gaps--
+	}
+	for a.qa[len(a.qa)-1] == '-' {
+		a.qa = a.qa[:len(a.qa)-1]
+		a.sa = a.sa[:len(a.sa)-1]
+		a.gaps--
+	}
 }
 
 // Align computes the next alignment in the dynamic programming matrix. It returns false if none was found.
