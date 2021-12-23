@@ -21,17 +21,18 @@ type ScoreMatrix struct {
 	dic map[byte]int
 }
 type alignment struct {
-	q, s       *fasta.Sequence
-	m          *ScoreMatrix
-	gapO, gapE float64
-	p          [][]cell
-	qa, sa     []byte
-	score      float64
-	ll         int
-	qs         int
-	ss         int
-	count      int
-	coords     []coordinate
+	q, s             *fasta.Sequence
+	m                *ScoreMatrix
+	gapO, gapE       float64
+	p                [][]cell
+	qa, sa           []byte
+	score            float64
+	gaps, mismatches int
+	ll               int
+	qs               int
+	ss               int
+	count            int
+	coords           []coordinate
 }
 type cell struct {
 	e, f, g, v float64
@@ -146,11 +147,35 @@ func (a *alignment) String() string {
 	w.Init(buffer, 1, 0, 1, ' ', 0)
 	h := a.q.Header()
 	l := len(a.q.Data())
-	fmt.Fprintf(w, "Query\t%s\t(%d residues)\n", h, l)
+	fmt.Fprintf(w, "Query\t%s\t(%d residue", h, l)
+	if l != 1 {
+		fmt.Fprint(w, "s")
+	}
+	fmt.Fprint(w, ")\n")
 	h = a.s.Header()
 	l = len(a.s.Data())
-	fmt.Fprintf(w, "Subject\t%s\t(%d residues)\n", h, l)
+	fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, l)
+	if l != 1 {
+		fmt.Fprint(w, "s")
+	}
+	fmt.Fprint(w, ")\n")
 	fmt.Fprintf(w, "Score\t%g\n", a.score)
+	er := a.gaps + a.mismatches
+	fmt.Fprintf(w, "Error")
+	if er != 1 {
+		fmt.Fprintf(w, "s")
+	}
+	fmt.Fprintf(w, "\t%d", er)
+	fmt.Fprintf(w, " (%d gap", a.gaps)
+	if a.gaps != 1 {
+		fmt.Fprint(w, "s")
+	}
+	fmt.Fprintf(w, ", %d mismatch", a.mismatches)
+	if a.mismatches != 1 {
+		fmt.Fprint(w, "es")
+	}
+	fmt.Fprint(w, ")\n")
+
 	w.Flush()
 	end := 0
 	qs := a.qs
@@ -199,6 +224,26 @@ func (a *alignment) String() string {
 	buffer.Write([]byte("//"))
 	return buffer.String()
 }
+func (a *alignment) reverse() {
+	revStr(a.qa)
+	revStr(a.sa)
+}
+func (a *alignment) errors() {
+	a.mismatches = 0
+	a.gaps = 0
+	if len(a.qa) != len(a.sa) {
+		log.Fatal("aligned sequences don't " +
+			"have same length")
+	}
+	for i, r1 := range a.qa {
+		r2 := a.sa[i]
+		if r1 == '-' || r2 == '-' {
+			a.gaps++
+		} else if r1 != r2 {
+			a.mismatches++
+		}
+	}
+}
 
 // SetLineLength sets the length of alignment lines in String.
 func (a *alignment) SetLineLength(ll int) {
@@ -210,6 +255,16 @@ func (a *alignment) SetLineLength(ll int) {
 // Score returns the score of the alignment.
 func (a *alignment) Score() float64 {
 	return a.score
+}
+
+// Mismatches returns the number of mismatches of the alignment.
+func (a *alignment) Mismatches() int {
+	return a.mismatches
+}
+
+// Gaps returns the number of gap characters in the alignment.
+func (a *alignment) Gaps() int {
+	return a.gaps
 }
 
 // Method Align computes the alignment.  We declare a set of
@@ -258,8 +313,8 @@ func (a *GlobalAlignment) Align() {
 			j--
 		}
 	}
-	reverse(a.qa)
-	reverse(a.sa)
+	a.reverse()
+	a.errors()
 }
 func (a *OverlapAlignment) Align() {
 	q := a.q.Data()
@@ -325,6 +380,8 @@ func (a *OverlapAlignment) Align() {
 		a.sa = append(a.sa, s[k-1])
 		a.qa = append(a.qa, '-')
 	}
+	a.reverse()
+	a.errors()
 }
 
 // Align computes the next alignment in the dynamic programming matrix. It returns false if none was found.
@@ -405,6 +462,8 @@ func (a *LocalAlignment) Align() bool {
 		if found {
 			a.qs = i
 			a.ss = j
+			a.reverse()
+			a.errors()
 
 		}
 		if found {
@@ -477,8 +536,13 @@ func ReadScoreMatrix(r io.Reader) *ScoreMatrix {
 	}
 	return s
 }
+func revStr(s []byte) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}
 
-// NewGlobalAlignment constructs a new global alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, invoke the method Align.
+// NewGlobalAlignment constructs a new global alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, call the method Align.
 func NewGlobalAlignment(q, s *fasta.Sequence,
 	sm *ScoreMatrix,
 	gapO, gapE float64) *GlobalAlignment {
@@ -486,13 +550,8 @@ func NewGlobalAlignment(q, s *fasta.Sequence,
 	ga.new(q, s, sm, gapO, gapE)
 	return ga
 }
-func reverse(s []byte) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
 
-// NewOverlapAlignment constructs an overlap alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, invoke the method Align.
+// NewOverlapAlignment constructs an overlap alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, call the method Align.
 func NewOverlapAlignment(q, s *fasta.Sequence,
 	sm *ScoreMatrix,
 	gapO, gapE float64) *OverlapAlignment {
@@ -501,7 +560,7 @@ func NewOverlapAlignment(q, s *fasta.Sequence,
 	return oa
 }
 
-// NewLocalAlignment constructs a local alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, invoke the method Align.
+// NewLocalAlignment constructs a local alignment from a query and a subject sequence, and a substitution matrix. To compute the actual alignment, call the method Align.
 func NewLocalAlignment(q, s *fasta.Sequence,
 	sm *ScoreMatrix,
 	gapO, gapE float64) *LocalAlignment {

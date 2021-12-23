@@ -1,6 +1,7 @@
 Query   Q (7 residues)
 Subject S (8 residues)
 Score   19
+Errors  3 (1 gap, 2 mismatches)
 
 
 Query   1 MKFLAL-F 7

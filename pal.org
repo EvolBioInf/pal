@@ -562,24 +562,63 @@
 #+end_src
 #+begin_src latex
   The header consists of the names of the sequences, their role (query
-  or subject), their lengths, and the alignment score. Once we've written
-  them, we flush the \ty{tabwriter}.
+  or subject), their lengths, the alignment score, and the number of
+  errors. Once we've written them, we
+  flush the \ty{tabwriter}.
 #+end_src
 #+begin_src go <<Write alignment header to tabwriter>>=
   h := a.q.Header()
   l := len(a.q.Data())
-  fmt.Fprintf(w, "Query\t%s\t(%d residues)\n", h, l)
+  //<<Write number of query residues>>
   h = a.s.Header()
   l = len(a.s.Data())
-  fmt.Fprintf(w, "Subject\t%s\t(%d residues)\n", h, l)
+  //<<Write number of subject residues>>
   fmt.Fprintf(w, "Score\t%g\n", a.score)
+  //<<Write number of errors>>
   w.Flush()
 #+end_src
 #+begin_src latex
-  We declare \ty{score} as an alignment field.
+  We distinguish a single query residue from other residue counts.
+#+end_src
+#+begin_src go <<Write number of query residues>>=
+  fmt.Fprintf(w, "Query\t%s\t(%d residue", h, l)
+  if l != 1 { fmt.Fprint(w, "s") }
+  fmt.Fprint(w, ")\n")
+#+end_src
+#+begin_src latex
+  Similarly, we distinguish a single subject residue from other residue
+  counts.
+#+end_src
+#+begin_src go <<Write number of subject residues>>=
+  fmt.Fprintf(w, "Subject\t%s\t(%d residue", h, l)
+  if l != 1 {
+	  fmt.Fprint(w, "s")
+  }
+  fmt.Fprint(w, ")\n")
+#+end_src
+#+begin_src latex
+  Errors consist of gaps and mismatches and we again distinguish
+  singular from plural.
+#+end_src
+#+begin_src go <<Write number of errors>>=
+  er := a.gaps + a.mismatches
+  fmt.Fprintf(w, "Error")
+  if er != 1 { fmt.Fprintf(w, "s") }
+  fmt.Fprintf(w, "\t%d", er)
+  fmt.Fprintf(w, " (%d gap", a.gaps)
+  if a.gaps != 1 { fmt.Fprint(w, "s") }
+  fmt.Fprintf(w, ", %d mismatch", a.mismatches)
+  if a.mismatches != 1 { fmt.Fprint(w, "es") }
+  fmt.Fprint(w, ")\n")
+#+end_src
+
+#+begin_src latex
+  We declare the alignment fields \ty{score}, \ty{gaps}, and
+  \ty{mismatches}.
 #+end_src
 #+begin_src go <<Alignment fields>>=
   score float64
+  gaps, mismatches int
 #+end_src
 #+begin_src latex
   Having completed the header, we loop over the alignment and format it
@@ -757,6 +796,59 @@
   ss int
 #+end_src
 #+begin_src latex
+  \subsubsection{Method \ty{reverse}}
+  A trace back returns sequences that read from right to left, so we
+  implement an auxiliary method to reverse them. It calls the function
+  \ty{revStr} on the query and the subject alignments.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) reverse() {
+	  revStr(a.qa)
+	  revStr(a.sa)
+  }
+#+end_src
+#+begin_src latex
+  In the function \ty{revStr} we move simultaneously from the start and
+  the end of the slice to the middle swapping a pair of residues at each
+  step. I took this neat code from \cite[p. 86]{don16:go}.
+#+end_src
+#+begin_src go <<Functions>>=
+  func revStr(s []byte) {
+	  for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		  s[i], s[j] = s[j], s[i]
+	  }
+  }
+#+end_src
+#+begin_src latex
+  \subsubsection{Method \ty{errors}}
+  The header of an alignment contains the number of mismatches and gaps.
+  We compute these with another auxiliary method, \ty{errors}. At the
+  beginning of \ty{errors} we reset the counts of mismatches and
+  gaps. Then we check that the two alignment slices have the same length
+  and bail otherwise. Next, we count the errors.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) errors() {
+	  a.mismatches = 0
+	  a.gaps = 0
+	  if len(a.qa) != len(a.sa) {
+		  log.Fatal("aligned sequences don't " +
+			  "have same length")
+	  }
+	  //<<Count erors>>
+  }
+#+end_src
+#+begin_src go <<Count erors>>=
+  for i, r1 := range a.qa {
+	  r2 := a.sa[i]
+	  if r1 == '-' || r2 == '-' {
+		  a.gaps++
+	  } else if r1 != r2 {
+		  a.mismatches++
+	  }
+  }
+#+end_src
+#+begin_src latex
   \subsubsection{Method \ty{SetLineLength}}
   !\ty{SetLineLength} sets the length of alignment lines in \ty{String}.
   If the length passed is less than one, we make no change.
@@ -778,6 +870,24 @@
   }
 #+end_src
 #+begin_src latex
+  \subsubsection{Method \ty{Mismatches}}
+  !\ty{Mismatches} returns the number of mismatches of the alignment.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) Mismatches() int {
+	  return a.mismatches
+  }
+#+end_src
+#+begin_src latex
+  \subsubsection{Method \ty{Gaps}}
+  !\ty{Gaps} returns the number of gap characters in the alignment.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) Gaps() int {
+	  return a.gaps
+  }
+#+end_src
+#+begin_src latex
   \subsection{Data Structure \ty{GlobalAlignment}}
   We build a global alignment from our basic alignment type.
   !\ty{GlobalAlignment} holds the global alignment of two sequences.
@@ -791,7 +901,7 @@
   \subsubsection{Function \ty{NewGlobalAlignment}}
   !\ty{NewGlobalAlignment} constructs a new global alignment from a
   !query and a subject sequence, and a substitution matrix. To compute
-  !the actual alignment, invoke the method \ty{Align}.
+  !the actual alignment, call the method \ty{Align}.
 
   We allocate a new global alignment and delegate its construction to the
   \ty{new} method inherited from \ty{alignment}.
@@ -886,7 +996,7 @@
   dynamic programming matrix (Figure~\ref{fig:dpm}) and ends in its top
   right hand corner. Trace
   back returns the alignments in right to left notation, so we reverse
-  them.
+  them. Then we calculate their errors in the alignment.
 #+end_src
 #+begin_src go <<Trace back global>>=
   i := m
@@ -894,8 +1004,8 @@
   for i > 0 || j > 0 {
 	  //<<Trace back>>
   }
-  reverse(a.qa)
-  reverse(a.sa)
+  a.reverse()
+  a.errors()
 #+end_src
 #+begin_src latex
   During each step of the trace back we move either horizontally,
@@ -942,20 +1052,6 @@
   j--
 #+end_src
 #+begin_src latex
-  The last step of the trace back is to implement the function
-  \ty{reverse} to reestablish the left-to right ordering of our
-  alignment. In the loop we move simultaneously from the start and the
-  end of the slice to the middle swapping a pair of residues at each
-  step. I took this neat code from \cite[p. 86]{don16:go}.
-#+end_src
-#+begin_src go <<Functions>>=
-  func reverse(s []byte) {
-	  for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		  s[i], s[j] = s[j], s[i]
-	  }
-  }
-#+end_src
-#+begin_src latex
   \subsection{Data Structure \ty{OverlapAlignment}}
   Like the global alignments, we build overlap alignments from our
   basic alignment type.
@@ -970,7 +1066,7 @@
   \subsubsection{Function \ty{NewOverlapAlignment}}
   !\ty{NewOverlapAlignment} constructs an overlap alignment from a
   !query and a subject sequence, and a substitution matrix. To compute
-  !the actual alignment, invoke the method \ty{Align}.
+  !the actual alignment, call the method \ty{Align}.
 
   We allocate an overlap alignment and delegate its construction to the
   \ty{new} method inherited from \ty{alignment}.
@@ -1001,7 +1097,8 @@
 #+end_src
 #+begin_src latex
   The trace back starts at $p_{ij}$, where $i$ and $j$ remain to be
-  determined, and proceeds to the first row or column.
+  determined, and proceeds to the first row or column. We conclude it by
+  revering the aligned residues and counting the errors they contain.
 #+end_src
 #+begin_src go <<Trace back overlap>>=
   //<<Find overlap starting point>>
@@ -1010,6 +1107,8 @@
 	  //<<Trace back>>
   }
   //<<Second round of end gaps>>
+  a.reverse()
+  a.errors()
 #+end_src
 #+begin_src latex
   The starting point of the overlap alignment is the maximum entry in
@@ -1094,7 +1193,7 @@
   \subsubsection{Function \ty{NewLocalAlignment}}
   !\ty{NewLocalAlignment} constructs a local alignment from a
   !query and a subject sequence, and a substitution matrix. To compute
-  !the actual alignment, invoke the method \ty{Align}.
+  !the actual alignment, call the method \ty{Align}.
 
   We allocate a local alignment and delegate its construction to the
   \ty{new} method inherited from \ty{alignment}.
@@ -1164,7 +1263,8 @@
   As explained in the Introduction, in a local alignment the score,
   $p^{\rm v}_{ij}$, is formed as the maximum of $p^{\rm e}_{ij}, p^{\rm
     f}_{ij}, p^{\rm g}_{ij}$, and zero. Since global alignment maximizes
-  over the first three of these terms, we can use it here.
+  over the first three of these terms, we can use it here and append the
+  maximization over zero.
 #+end_src
 #+begin_src go <<Determine local entry>>=
   //<<Fill in cell>>
@@ -1174,9 +1274,9 @@
 #+end_src
 #+begin_src latex
   We store the starting point of the optimal alignment in the same
-  structure we shall use later on to store all possible starting points,
-  a slice of coordinates. Each coordinate consists of a pair of indexes
-  and a score.
+  structure we later use to store all possible starting points, a slice
+  of coordinates. Each coordinate consists of a pair of indexes and a
+  score.
 #+end_src
 #+begin_src go <<Types>>=
   type coordinate struct {
@@ -1337,10 +1437,12 @@
 #+end_src
 #+begin_src latex
   If we've found an alignment, we note its start positions in the query
-  and the subject.
+  and the subject, reverse its residues, and count its errors.
 #+end_src
 #+begin_src go <<Alignment found>>=
   a.qs = i
   a.ss = j
+  a.reverse()
+  a.errors()
 #+end_src
 
