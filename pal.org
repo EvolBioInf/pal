@@ -58,7 +58,13 @@
   \end{figure}
 
   Gaps are scored with affine costs, that is, gap opening, $g_{\rm o}$,
-  is distinguished from gap extension, $g_{\rm e}$. To accommodate these
+  is distinguished from gap extension, $g_{\rm e}$ and a gap of length
+  $l$ has score
+  \[
+  g(l) = g_{\rm o} + (l-1)g_{\rm e}.
+  \]
+
+  To accommodate these
   affine gap costs, each entry in $p$, $p_{ij}$, consists of four
   subentries, $p_{ij}^{\rm e}$, $p_{ij}^{\rm f}$, $p_{ij}^{\rm g}$,
   and $p_{ij}^{\rm v}$.
@@ -66,29 +72,29 @@
   The last entry,
   $p_{ij}^{\rm v}$, is the score of the subalignment of $q[1...i]$ and
   $s[1...j]$. It is computed as the maximum of the other three entries
-  \cite[p. 244]{gus97:alg}.
+  \cite[p. 405]{ohl13:bio}.
   \begin{equation}\label{eq:alMax}
     p_{ij}^{\rm v} = \mbox{max}\left(p_{ij}^{\rm e},p_{ij}^{\rm f},p_{ij}^{\rm g}\right).
   \end{equation}
   The three terms on the right hand side are computed with respect to
   their vertical, horizontal, or diagonal neighbors:
   \begin{eqnarray*}
-    p_{ij}^{\rm e} & = & \mbox{max}\left(p_{i-1,j}^{\rm e},
-    p_{i-1,j}^{\rm v}+g_{\rm o}\right)+g_{\rm e}\\
-    p_{ij}^{\rm f} & = & \mbox{max}\left(p_{i,j-1}^{\rm f},
-    p_{i,j-1}^{\rm v}+g_{\rm o}\right)+g_{\rm e}\\
+    p_{ij}^{\rm e} & = & \mbox{max}\left(p_{i-1,j}^{\rm e}+g_{\rm e},
+    p_{i-1,j}^{\rm v}+g_{\rm o}\right)\\
+    p_{ij}^{\rm f} & = & \mbox{max}\left(p_{i,j-1}^{\rm f}+g_{\rm e},
+    p_{i,j-1}^{\rm v}+g_{\rm o}\right)\\
     p_{ij}^{\rm g} & = & p_{i-1,j-1}^{\rm g} + \mbox{score}\left(q[i],s[j]\right)
   \end{eqnarray*}
   In the last equation the \emph{score} of two residues is either
   match/mismatch, or taken from an explicit score matrix, for example
   the BLOSUM62 matrix in Figure~\ref{fig:scoreMat}.
 
-    \begin{figure}
-      \small
-      \verbatiminput{blosum62.txt}
+  \begin{figure}
+    \small
+    \verbatiminput{blosum62.txt}
     \caption{The BLOSUM62 amino acid substitution matrix for scoring
       aligned pairs of amino acids.}\label{fig:scoreMat}
-    \end{figure}
+  \end{figure}
 
   For local alignment, the maximum in equation (\ref{eq:alMax}) includes
   zero,
@@ -97,11 +103,13 @@
   \]
 
   Initialization of $p$ also depends on the alignment type. For global
-  it consists of one long and costly gap across the first column and
-  first row.
+  we set the top left cell to zero.
+  \[
+  p_{00}^{\rm v}  = p_{00}^{\rm e} = p_{00}^{\rm f} = p_{00}^{\rm g} = 0
+  \]
+  In addition we set initialize the costs of gaps along the top row and
+  first column.
   \begin{eqnarray*}
-    p_{00}^{\rm v} & = p_{00}^{\rm e} = p_{00}^{\rm f} = p_{00}^{\rm
-      g} = 0\\
     p_{i0}^{\rm v} & = & p_{i0}^{\rm e} = g_{\rm o} + ig_{\rm e}; i>0\\
     p_{i0}^{\rm f} & = & p_{i0}^{\rm g} = -\infty; i>0\\
     p_{0j}^{\rm v} & = & p_{0j}^{\rm f} = g_{\rm o} + jg_{\rm e}; j>0\\
@@ -110,10 +118,10 @@
   For local and overlap alignment, the scores in the first column and
   first row are set to zero.
   \[
-  p_{i0}^{\rm v}=p_{0,j}^{\rm v}=0
-  p_{i0}^{\rm e}=p_{0,j}^{\rm e}=0
-  p_{i0}^{\rm f}=p_{0,j}^{\rm f}=0
-  p_{i0}^{\rm g}=p_{0,j}^{\rm g}=0
+  p_{i0}^{\rm v}=p_{0j}^{\rm v}=0\\
+  p_{i0}^{\rm e}=p_{0j}^{\rm e}=0\\
+  p_{i0}^{\rm f}=p_{0j}^{\rm f}=0\\
+  p_{i0}^{\rm g}=p_{0j}^{\rm g}=0\\
   \]
 
   To extract the actual alignment from $p$, we follow its path. For
@@ -961,7 +969,8 @@
 #+end_src
 #+begin_src latex
   \subsubsection{Align}
-  !Method \ty{Align} computes the alignment.  We declare a set of
+  !Method \ty{Align} computes the alignment.
+  We declare a set of
   convenient variables, initialize the dynamic programming matrix, fill
   it, and carry out the trace back.
 #+end_src
@@ -989,13 +998,13 @@
 #+end_src
 #+begin_src go <<Initialize global>>=
   for i := 1; i <= m; i++ {
-	  p[i][0].e = a.gapO + float64(i) * a.gapE
+	  p[i][0].e = a.gapO + float64(i-1) * a.gapE
 	  p[i][0].v = p[i][0].e
 	  p[i][0].f = -math.MaxFloat64
 	  p[i][0].g = -math.MaxFloat64
   }
   for j := 1; j <= n; j++ {
-	  p[0][j].f = a.gapO + float64(j) * a.gapE
+	  p[0][j].f = a.gapO + float64(j-1) * a.gapE
 	  p[0][j].v = p[0][j].f
 	  p[0][j].e = -math.MaxFloat64
 	  p[0][j].g = -math.MaxFloat64
@@ -1024,8 +1033,8 @@
   compound variables of a cell.
 #+end_src
 #+begin_src go <<Fill in cell>>=
-  p[i][j].e = math.Max(p[i-1][j].e, p[i-1][j].v + a.gapO) + a.gapE
-  p[i][j].f = math.Max(p[i][j-1].f, p[i][j-1].v + a.gapO) + a.gapE
+  p[i][j].e = math.Max(p[i-1][j].e + a.gapE, p[i-1][j].v + a.gapO)
+  p[i][j].f = math.Max(p[i][j-1].f + a.gapE, p[i][j-1].v + a.gapO)
   p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
   p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
 #+end_src

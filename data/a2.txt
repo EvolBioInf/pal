@@ -1,6 +1,6 @@
 Query   Q (100 residues)
 Subject S (96 residues)
-Score   62
+Score   64
 Errors  46 (46 gaps, 0 mismatches)
 
 

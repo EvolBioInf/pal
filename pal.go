@@ -278,7 +278,7 @@ func (a *alignment) SetSubjectLength(l int) {
 	a.sl = l
 }
 
-// Method Align computes the alignment.  We declare a set of
+// Method Align computes the alignment.
 func (a *GlobalAlignment) Align() {
 	q := a.q.Data()
 	s := a.s.Data()
@@ -286,21 +286,21 @@ func (a *GlobalAlignment) Align() {
 	n := len(s)
 	p := a.p
 	for i := 1; i <= m; i++ {
-		p[i][0].e = a.gapO + float64(i)*a.gapE
+		p[i][0].e = a.gapO + float64(i-1)*a.gapE
 		p[i][0].v = p[i][0].e
 		p[i][0].f = -math.MaxFloat64
 		p[i][0].g = -math.MaxFloat64
 	}
 	for j := 1; j <= n; j++ {
-		p[0][j].f = a.gapO + float64(j)*a.gapE
+		p[0][j].f = a.gapO + float64(j-1)*a.gapE
 		p[0][j].v = p[0][j].f
 		p[0][j].e = -math.MaxFloat64
 		p[0][j].g = -math.MaxFloat64
 	}
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
-			p[i][j].e = math.Max(p[i-1][j].e, p[i-1][j].v+a.gapO) + a.gapE
-			p[i][j].f = math.Max(p[i][j-1].f, p[i][j-1].v+a.gapO) + a.gapE
+			p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
+			p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
 			p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
 			p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
 		}
@@ -335,8 +335,8 @@ func (a *OverlapAlignment) Align() {
 	p := a.p
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
-			p[i][j].e = math.Max(p[i-1][j].e, p[i-1][j].v+a.gapO) + a.gapE
-			p[i][j].f = math.Max(p[i][j-1].f, p[i][j-1].v+a.gapO) + a.gapE
+			p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
+			p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
 			p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
 			p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
 		}
@@ -425,8 +425,8 @@ func (a *LocalAlignment) Align() bool {
 	if a.count == 1 {
 		for i := 1; i <= m; i++ {
 			for j := 1; j <= n; j++ {
-				p[i][j].e = math.Max(p[i-1][j].e, p[i-1][j].v+a.gapO) + a.gapE
-				p[i][j].f = math.Max(p[i][j-1].f, p[i][j-1].v+a.gapO) + a.gapE
+				p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
+				p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
 				p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
 				p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
 				if p[i][j].v < 0 {
