@@ -202,12 +202,13 @@
 #+end_src
 #+begin_src latex
   The BLOSUM62 matrix in Figure~\ref{fig:scoreMat} contains 24
-  characters. Nucleotide sequences add one more, \ty{U} for uracil. We
-  go through the characters that can appear in molecular sequence and
-  set the corresponding index in the score matrix.
+  characters, the BLAST PAM70 matrix also lists \ty{J}. Nucleotide
+  sequences add one more, \ty{U} for uracil. We go through the
+  characters that can appear in molecular sequence and set the
+  corresponding index in the score matrix.
 #+end_src
 #+begin_src go <<Fill-in dictionary>>=
-  sm.res = "ARNDCQEGHILKMFPSTWYVBZX*U"
+  sm.res = "ARNDCQEGHIJLKMFPSTWYVBZX*U"
   for i, r := range sm.res {
 	  sm.dic[byte(r)] = i
   }

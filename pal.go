@@ -517,7 +517,7 @@ func (c coordSlice) Less(i, j int) bool {
 func NewScoreMatrix(match, mismatch float64) *ScoreMatrix {
 	sm := new(ScoreMatrix)
 	sm.dic = make(map[byte]int)
-	sm.res = "ARNDCQEGHILKMFPSTWYVBZX*U"
+	sm.res = "ARNDCQEGHIJLKMFPSTWYVBZX*U"
 	for i, r := range sm.res {
 		sm.dic[byte(r)] = i
 	}
