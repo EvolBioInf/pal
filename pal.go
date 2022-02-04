@@ -25,7 +25,7 @@ type alignment struct {
 	m                *ScoreMatrix
 	gapO, gapE       float64
 	ql, sl           int
-	p                [][]cell
+	p                [][]Cell
 	qa, sa           []byte
 	score            float64
 	gaps, mismatches int
@@ -35,8 +35,8 @@ type alignment struct {
 	count            int
 	coords           []coordinate
 }
-type cell struct {
-	e, f, g, v float64
+type Cell struct {
+	E, F, G, V float64
 	visited    bool
 }
 
@@ -126,15 +126,20 @@ func (a *alignment) new(q, s *fasta.Sequence,
 	a.sl = len(s.Data())
 	m := len(a.q.Data()) + 1
 	n := len(a.s.Data()) + 1
-	a.p = make([][]cell, m)
+	a.p = make([][]Cell, m)
 	for i := 0; i < m; i++ {
-		a.p[i] = make([]cell, n)
+		a.p[i] = make([]Cell, n)
 	}
 
 	a.qa = make([]byte, 0)
 	a.sa = make([]byte, 0)
 	a.ll = fasta.DefaultLineLength
 	a.coords = make([]coordinate, 0)
+}
+
+//  The Method ProgrammingMatrix returns the (m+1) x (n+1) matrix  used for calculating an alignment of two sequences of lengths m and  n.
+func (a *alignment) ProgrammingMatrix() [][]Cell {
+	return a.p
 }
 
 // RawAlignment returns the aligned query and subject sequences.
@@ -286,34 +291,34 @@ func (a *GlobalAlignment) Align() {
 	n := len(s)
 	p := a.p
 	for i := 1; i <= m; i++ {
-		p[i][0].e = a.gapO + float64(i-1)*a.gapE
-		p[i][0].v = p[i][0].e
-		p[i][0].f = -math.MaxFloat64
-		p[i][0].g = -math.MaxFloat64
+		p[i][0].E = a.gapO + float64(i-1)*a.gapE
+		p[i][0].V = p[i][0].E
+		p[i][0].F = -math.MaxFloat64
+		p[i][0].G = -math.MaxFloat64
 	}
 	for j := 1; j <= n; j++ {
-		p[0][j].f = a.gapO + float64(j-1)*a.gapE
-		p[0][j].v = p[0][j].f
-		p[0][j].e = -math.MaxFloat64
-		p[0][j].g = -math.MaxFloat64
+		p[0][j].F = a.gapO + float64(j-1)*a.gapE
+		p[0][j].V = p[0][j].F
+		p[0][j].E = -math.MaxFloat64
+		p[0][j].G = -math.MaxFloat64
 	}
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
-			p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
-			p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
-			p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
-			p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
+			p[i][j].E = math.Max(p[i-1][j].E+a.gapE, p[i-1][j].V+a.gapO)
+			p[i][j].F = math.Max(p[i][j-1].F+a.gapE, p[i][j-1].V+a.gapO)
+			p[i][j].G = p[i-1][j-1].V + a.m.Score(q[i-1], s[j-1])
+			p[i][j].V = math.Max(math.Max(p[i][j].E, p[i][j].F), p[i][j].G)
 		}
 	}
-	a.score = a.p[m][n].v
+	a.score = a.p[m][n].V
 	i := m
 	j := n
 	for i > 0 || j > 0 {
-		if p[i][j].v == p[i][j].e {
+		if p[i][j].V == p[i][j].E {
 			a.qa = append(a.qa, q[i-1])
 			a.sa = append(a.sa, '-')
 			i--
-		} else if p[i][j].v == p[i][j].f {
+		} else if p[i][j].V == p[i][j].F {
 			a.qa = append(a.qa, '-')
 			a.sa = append(a.sa, s[j-1])
 			j--
@@ -335,30 +340,30 @@ func (a *OverlapAlignment) Align() {
 	p := a.p
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
-			p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
-			p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
-			p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
-			p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
+			p[i][j].E = math.Max(p[i-1][j].E+a.gapE, p[i-1][j].V+a.gapO)
+			p[i][j].F = math.Max(p[i][j-1].F+a.gapE, p[i][j-1].V+a.gapO)
+			p[i][j].G = p[i-1][j-1].V + a.m.Score(q[i-1], s[j-1])
+			p[i][j].V = math.Max(math.Max(p[i][j].E, p[i][j].F), p[i][j].G)
 		}
 	}
-	a.score = a.p[m][n].v
+	a.score = a.p[m][n].V
 	max := math.Inf(-1)
 	j := 0
 	i := m
 	for k := 0; k <= n; k++ {
-		if max < p[i][k].v {
-			max = p[i][k].v
+		if max < p[i][k].V {
+			max = p[i][k].V
 			j = k
 		}
 	}
 	for k := 0; k <= m; k++ {
-		if max < p[k][n].v {
-			max = p[k][n].v
+		if max < p[k][n].V {
+			max = p[k][n].V
 			i = k
 			j = n
 		}
 	}
-	a.score = p[i][j].v
+	a.score = p[i][j].V
 	for k := m; k > i; k-- {
 		a.qa = append(a.qa, q[k-1])
 		a.sa = append(a.sa, '-')
@@ -368,11 +373,11 @@ func (a *OverlapAlignment) Align() {
 		a.sa = append(a.sa, s[k-1])
 	}
 	for i > 0 && j > 0 {
-		if p[i][j].v == p[i][j].e {
+		if p[i][j].V == p[i][j].E {
 			a.qa = append(a.qa, q[i-1])
 			a.sa = append(a.sa, '-')
 			i--
-		} else if p[i][j].v == p[i][j].f {
+		} else if p[i][j].V == p[i][j].F {
 			a.qa = append(a.qa, '-')
 			a.sa = append(a.sa, s[j-1])
 			j--
@@ -425,12 +430,12 @@ func (a *LocalAlignment) Align() bool {
 	if a.count == 1 {
 		for i := 1; i <= m; i++ {
 			for j := 1; j <= n; j++ {
-				p[i][j].e = math.Max(p[i-1][j].e+a.gapE, p[i-1][j].v+a.gapO)
-				p[i][j].f = math.Max(p[i][j-1].f+a.gapE, p[i][j-1].v+a.gapO)
-				p[i][j].g = p[i-1][j-1].v + a.m.Score(q[i-1], s[j-1])
-				p[i][j].v = math.Max(math.Max(p[i][j].e, p[i][j].f), p[i][j].g)
-				if p[i][j].v < 0 {
-					p[i][j].v = 0
+				p[i][j].E = math.Max(p[i-1][j].E+a.gapE, p[i-1][j].V+a.gapO)
+				p[i][j].F = math.Max(p[i][j-1].F+a.gapE, p[i][j-1].V+a.gapO)
+				p[i][j].G = p[i-1][j-1].V + a.m.Score(q[i-1], s[j-1])
+				p[i][j].V = math.Max(math.Max(p[i][j].E, p[i][j].F), p[i][j].G)
+				if p[i][j].V < 0 {
+					p[i][j].V = 0
 				}
 			}
 		}
@@ -438,8 +443,8 @@ func (a *LocalAlignment) Align() bool {
 		c.s = -math.MaxFloat64
 		for i := 1; i <= m; i++ {
 			for j := 1; j <= n; j++ {
-				if c.s < p[i][j].v {
-					c.s = p[i][j].v
+				if c.s < p[i][j].V {
+					c.s = p[i][j].V
 					c.i = i
 					c.j = j
 				}
@@ -453,7 +458,7 @@ func (a *LocalAlignment) Align() bool {
 				if !p[i][j].visited {
 					c.i = i
 					c.j = j
-					c.s = p[i][j].v
+					c.s = p[i][j].V
 					a.coords = append(a.coords, c)
 				}
 			}
@@ -465,14 +470,14 @@ func (a *LocalAlignment) Align() bool {
 		i := c.i
 		j := c.j
 		found = true
-		a.score = p[i][j].v
-		for p[i][j].v > 0 {
+		a.score = p[i][j].V
+		for p[i][j].V > 0 {
 			p[i][j].visited = true
-			if p[i][j].v == p[i][j].e {
+			if p[i][j].V == p[i][j].E {
 				a.qa = append(a.qa, q[i-1])
 				a.sa = append(a.sa, '-')
 				i--
-			} else if p[i][j].v == p[i][j].f {
+			} else if p[i][j].V == p[i][j].F {
 				a.qa = append(a.qa, '-')
 				a.sa = append(a.sa, s[j-1])
 				j--
