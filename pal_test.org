@@ -145,7 +145,7 @@
   get = append(get, o.String() + "\n")
 #+end_src
 #+begin_src latex
-  In the third and last test we compute the first two local alignments
+  In the third test we compute the first two local alignments
   of two \emph{Adh} sequences from \emph{Drosophila}.
 #+end_src
 #+begin_src go <<Store what we get for alignment>>=
@@ -194,8 +194,23 @@
   get = append(get, str)
 #+end_src
 #+begin_src latex
-  The results we want are contained in files \ty{a1.txt}, \ty{a2.txt},
-  and \ty{a3.txt}.
+  In the fourth test we test printing of the programming matrix.
+#+end_src
+#+begin_src go <<Store what we get for alignment>>=
+  str = a.PrintMatrix('v')
+  get = append(get, str)
+#+end_src
+#+begin_src latex
+  In the fifth and final test we print the trace back of the programming
+  matrix.
+#+end_src
+#+begin_src go <<Store what we get for alignment>>=
+  str = a.PrintMatrix('t')
+  get = append(get, str)
+#+end_src
+#+begin_src latex
+  The results we want are contained in files \ty{a1.txt}, \ty{a2.txt},...,
+  \ty{a5.txt}.
 #+end_src
 #+begin_src go <<Store what we want for alignment>>=
   for i, _ := range get {

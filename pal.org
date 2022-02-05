@@ -947,6 +947,162 @@
   }
 #+end_src
 #+begin_src latex
+  \subsubsection{Method \ty{PrintMatrix}}
+  When teaching bioinformatics, it is often convenient to print the
+  dynamic programming matrix.
+
+  ! The method \ty{PrintMatrix} returns a pretty string version of the
+  ! dynamic programming matrix. It takes as argument the type of
+  ! printing desired, v, e, f, g for the cell elements, and t for trace
+  ! back.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (a *alignment) PrintMatrix(t byte) string {
+	  q, s := a.RawAlignment()
+	  str := ""
+	  if t == 'v' || t == 'e' || t == 'f' || t == 'g' {
+		  //<<Print entries>>
+	  } else if t == 't' {
+		  //<<Print trace back>>
+	  } else {
+		  log.Fatalf("pal.PrintMatrix: can't print %c", t)
+	  }
+	  return str
+  }
+#+end_src
+#+begin_src latex
+  To print the entries, we construct a table with one cell for each cell
+  in the dynamic programming matrix. To align the column of our table,
+  we use a \ty{tabwriter} to write to the string we return
+  eventually. Since the first row and the firs column of our table
+  consist of the query and subject sequences, we extract these, before
+  we print the matrix header and its first row. Then we print the rest
+  of the matrix. At the end we flush the \ty{tabwriter}.
+#+end_src
+#+begin_src go <<Print entries>>=
+  buf := new(bytes.Buffer)
+  w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', tabwriter.AlignRight)
+  //<<Extract query and subject sequences>>
+  //<<Print matrix header>>
+  //<<Print first row of matrix>>
+  //<<Print rest of matrix>>
+  w.Flush()
+  str = buf.String()
+#+end_src
+#+begin_src latex
+  We import \ty{tabwriter}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "text/tabwriter"
+#+end_src
+#+begin_src latex
+  We extract the query and subject individually from the raw alignment sequences.
+#+end_src
+#+begin_src go <<Extract query and subject sequences>>=
+  //<<Extract query>>
+  //<<Extract subject>>
+#+end_src
+#+begin_src latex
+  We extract the query by squeezing out the gaps.
+#+end_src
+#+begin_src go <<Extract query>>=
+  i := 0
+  for _, c := range q {
+	  if c != '-' {
+		  q[i] = c
+		  i++
+	  }
+  }
+  q = q[:i]
+#+end_src
+#+begin_src latex
+  We apply the same reslicing to extract the subject.
+#+end_src
+#+begin_src go <<Extract subject>>=
+  i = 0
+  for _, c := range s {
+	  if c != '-' {
+		  s[i] = c
+		  i++
+	  }
+  }
+  s = s[:i]
+#+end_src
+#+begin_src latex
+  The header of the matrix consists of a gap followed by the subject sequence.
+#+end_src
+#+begin_src go <<Print matrix header>>=
+  fmt.Fprintf(w, "\t-")
+  for _, c := range s {
+	  fmt.Fprintf(w, "\t%c", c)
+  }
+  fmt.Fprint(w, "\t\n")
+#+end_src
+#+begin_src latex
+  The first row of the matrix is preceded by a gap followed by the
+  requested cell entry.
+#+end_src
+#+begin_src go <<Print first row of matrix>>=
+  m := len(q)
+  n := len(s)
+  fmt.Fprint(w, "-")
+  for j := 0; j <= n; j++ {
+	  v := a.p[0][j].V
+	  if t == 'e' { v = a.p[0][j].E }
+	  if t == 'f' { v = a.p[0][j].F }
+	  if t == 'g' { v = a.p[0][j].G }
+	  fmt.Fprintf(w, "\t%g", v)
+  }
+  fmt.Fprint(w, "\t\n")
+#+end_src
+#+begin_src latex
+  The remaining rows are prefixed by a query residue.
+#+end_src
+#+begin_src go <<Print rest of matrix>>=
+  for i := 1; i <= m; i++ {
+	  fmt.Fprintf(w, "%c", q[i-1])
+	  for j := 0; j <= n; j++ {
+		  v := a.p[i][j].V
+		  if t == 'e' { v = a.p[i][j].E }
+		  if t == 'f' { v = a.p[i][j].F }
+		  if t == 'g' { v = a.p[i][j].G }
+		  fmt.Fprintf(w, "\t%g", v)
+	  }
+	  fmt.Fprint(w, "\t\n")
+  }
+#+end_src
+#+begin_src latex
+  For the trace back we abandon the character-centric approach used for
+  printing the matrix entries. The idea here is that users might like to
+  view a trace back in the context of a large matrix. So we just print
+  the x and y coordinates of the trace back, which can then be viewed
+  with a plotting tool. 
+#+end_src
+#+begin_src go <<Print trace back>>=
+  var i, j int
+  buf := new(bytes.Buffer)
+  //<<Print x/y  coordinates>>
+  str = buf.String()
+#+end_src
+#+begin_src latex
+  We'd like to observe the convention that alignments start in the top
+  left hand corner, rather than the bottom left hand corner of
+  graphs. We do this by setting the y coordinates negative.
+#+end_src
+#+begin_src go <<Print x/y  coordinates>>=
+  for p, c := range q {
+	  fmt.Fprintf(buf, "%d %d\n", j, -i)
+	  if c == '-' {
+		  i++
+	  } else if s[p] == '-' {
+		  j++
+	  } else {
+		  i++
+		  j++
+	  }
+  }
+#+end_src
+#+begin_src latex
   \subsection{Data Structure \ty{GlobalAlignment}}
   We build a global alignment from our basic alignment type.
   !\ty{GlobalAlignment} holds the global alignment of two sequences.
@@ -1544,4 +1700,3 @@
   a.reverse()
   a.errors()
 #+end_src
-

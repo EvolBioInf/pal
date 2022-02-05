@@ -283,6 +283,91 @@ func (a *alignment) SetSubjectLength(l int) {
 	a.sl = l
 }
 
+//  The method PrintMatrix returns a pretty string version of the  dynamic programming matrix. It takes as argument the type of  printing desired, v, e, f, g for the cell elements, and t for trace  back.
+func (a *alignment) PrintMatrix(t byte) string {
+	q, s := a.RawAlignment()
+	str := ""
+	if t == 'v' || t == 'e' || t == 'f' || t == 'g' {
+		buf := new(bytes.Buffer)
+		w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', tabwriter.AlignRight)
+		i := 0
+		for _, c := range q {
+			if c != '-' {
+				q[i] = c
+				i++
+			}
+		}
+		q = q[:i]
+		i = 0
+		for _, c := range s {
+			if c != '-' {
+				s[i] = c
+				i++
+			}
+		}
+		s = s[:i]
+		fmt.Fprintf(w, "\t-")
+		for _, c := range s {
+			fmt.Fprintf(w, "\t%c", c)
+		}
+		fmt.Fprint(w, "\t\n")
+		m := len(q)
+		n := len(s)
+		fmt.Fprint(w, "-")
+		for j := 0; j <= n; j++ {
+			v := a.p[0][j].V
+			if t == 'e' {
+				v = a.p[0][j].E
+			}
+			if t == 'f' {
+				v = a.p[0][j].F
+			}
+			if t == 'g' {
+				v = a.p[0][j].G
+			}
+			fmt.Fprintf(w, "\t%g", v)
+		}
+		fmt.Fprint(w, "\t\n")
+		for i := 1; i <= m; i++ {
+			fmt.Fprintf(w, "%c", q[i-1])
+			for j := 0; j <= n; j++ {
+				v := a.p[i][j].V
+				if t == 'e' {
+					v = a.p[i][j].E
+				}
+				if t == 'f' {
+					v = a.p[i][j].F
+				}
+				if t == 'g' {
+					v = a.p[i][j].G
+				}
+				fmt.Fprintf(w, "\t%g", v)
+			}
+			fmt.Fprint(w, "\t\n")
+		}
+		w.Flush()
+		str = buf.String()
+	} else if t == 't' {
+		var i, j int
+		buf := new(bytes.Buffer)
+		for p, c := range q {
+			fmt.Fprintf(buf, "%d %d\n", j, -i)
+			if c == '-' {
+				i++
+			} else if s[p] == '-' {
+				j++
+			} else {
+				i++
+				j++
+			}
+		}
+		str = buf.String()
+	} else {
+		log.Fatalf("pal.PrintMatrix: can't print %c", t)
+	}
+	return str
+}
+
 // Method Align computes the alignment.
 func (a *GlobalAlignment) Align() {
 	q := a.q.Data()
@@ -499,7 +584,6 @@ func (a *LocalAlignment) Align() bool {
 			a.ss = j
 			a.reverse()
 			a.errors()
-
 		}
 		if found {
 			a.coords = a.coords[k+1:]

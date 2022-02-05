@@ -87,6 +87,10 @@ func TestAlignment(t *testing.T) {
 	l.Align()
 	str += "\n" + l.String() + "\n"
 	get = append(get, str)
+	str = a.PrintMatrix('v')
+	get = append(get, str)
+	str = a.PrintMatrix('t')
+	get = append(get, str)
 	for i, _ := range get {
 		f := "data/a" + strconv.Itoa(i+1) + ".txt"
 		b, err := ioutil.ReadFile(f)
