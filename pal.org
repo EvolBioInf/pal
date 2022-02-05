@@ -1169,14 +1169,14 @@
   for i := 1; i <= m; i++ {
 	  p[i][0].E = a.gapO + float64(i-1) * a.gapE
 	  p[i][0].V = p[i][0].E
-	  p[i][0].F = -math.MaxFloat64
-	  p[i][0].G = -math.MaxFloat64
+	  p[i][0].F = math.Inf(-1)
+	  p[i][0].G = math.Inf(-1)
   }
   for j := 1; j <= n; j++ {
 	  p[0][j].F = a.gapO + float64(j-1) * a.gapE
 	  p[0][j].V = p[0][j].F
-	  p[0][j].E = -math.MaxFloat64
-	  p[0][j].G = -math.MaxFloat64
+	  p[0][j].E = math.Inf(-1)
+	  p[0][j].G = math.Inf(-1)
   }
 #+end_src
 #+begin_src latex
@@ -1560,7 +1560,7 @@
 #+end_src
 #+begin_src go <<Store optimal starting point>>=
   var c coordinate
-  c.s = -math.MaxFloat64
+  c.s = math.Inf(-1)
   for i := 1; i <= m; i++ {
 	  for j := 1; j <= n; j++ {
 		  if c.s < p[i][j].V {
