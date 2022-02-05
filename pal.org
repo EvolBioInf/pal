@@ -1076,11 +1076,13 @@
   printing the matrix entries. The idea here is that users might like to
   view a trace back in the context of a large matrix. So we just print
   the x and y coordinates of the trace back, which can then be viewed
-  with a plotting tool. 
+  with a plotting tool. The starting point of the trace back is given by
+  the query and subject start positions.
 #+end_src
 #+begin_src go <<Print trace back>>=
-  var i, j int
   buf := new(bytes.Buffer)
+  x := a.ss
+  y := a.qs
   //<<Print x/y  coordinates>>
   str = buf.String()
 #+end_src
@@ -1091,14 +1093,14 @@
 #+end_src
 #+begin_src go <<Print x/y  coordinates>>=
   for p, c := range q {
-	  fmt.Fprintf(buf, "%d %d\n", j, -i)
+	  fmt.Fprintf(buf, "%d %d\n", x, -y)
 	  if c == '-' {
-		  i++
+		  y++
 	  } else if s[p] == '-' {
-		  j++
+		  x++
 	  } else {
-		  i++
-		  j++
+		  x++
+		  y++
 	  }
   }
 #+end_src

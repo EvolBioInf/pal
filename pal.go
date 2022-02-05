@@ -348,17 +348,18 @@ func (a *alignment) PrintMatrix(t byte) string {
 		w.Flush()
 		str = buf.String()
 	} else if t == 't' {
-		var i, j int
 		buf := new(bytes.Buffer)
+		x := a.ss
+		y := a.qs
 		for p, c := range q {
-			fmt.Fprintf(buf, "%d %d\n", j, -i)
+			fmt.Fprintf(buf, "%d %d\n", x, -y)
 			if c == '-' {
-				i++
+				y++
 			} else if s[p] == '-' {
-				j++
+				x++
 			} else {
-				i++
-				j++
+				x++
+				y++
 			}
 		}
 		str = buf.String()
