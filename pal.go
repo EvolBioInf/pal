@@ -32,6 +32,7 @@ type alignment struct {
 	ll               int
 	qs               int
 	ss               int
+	isLocal          bool
 	count            int
 	coords           []coordinate
 }
@@ -283,29 +284,15 @@ func (a *alignment) SetSubjectLength(l int) {
 	a.sl = l
 }
 
-//  The method PrintMatrix returns a pretty string version of the  dynamic programming matrix. It takes as argument the type of  printing desired, v, e, f, g for the cell elements, and t for trace  back.
+//  The method PrintMatrix returns a pretty string version of the  dynamic programming matrix with back pointers. It takes as argument  the type of printing desired, v, e, f, g for the cell elements, and  t for trace back.
 func (a *alignment) PrintMatrix(t byte) string {
 	q, s := a.RawAlignment()
 	str := ""
 	if t == 'v' || t == 'e' || t == 'f' || t == 'g' {
 		buf := new(bytes.Buffer)
 		w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', tabwriter.AlignRight)
-		i := 0
-		for _, c := range q {
-			if c != '-' {
-				q[i] = c
-				i++
-			}
-		}
-		q = q[:i]
-		i = 0
-		for _, c := range s {
-			if c != '-' {
-				s[i] = c
-				i++
-			}
-		}
-		s = s[:i]
+		q = a.q.Data()
+		s = a.s.Data()
 		fmt.Fprintf(w, "\t-")
 		for _, c := range s {
 			fmt.Fprintf(w, "\t%c", c)
@@ -314,34 +301,57 @@ func (a *alignment) PrintMatrix(t byte) string {
 		m := len(q)
 		n := len(s)
 		fmt.Fprint(w, "-")
-		for j := 0; j <= n; j++ {
-			v := a.p[0][j].V
+		var c byte
+		for i, j := 0, 0; j <= n; j++ {
+			v := a.p[i][j].V
+			if v == a.p[i][j].E {
+				c = '^'
+			} else if v == a.p[i][j].F {
+				c = '<'
+			} else {
+				c = '\\'
+			}
+			if a.isLocal && v == 0 {
+				c = ' '
+			}
+			if i == 0 && j == 0 {
+				c = ' '
+			}
 			if t == 'e' {
 				v = a.p[0][j].E
-			}
-			if t == 'f' {
+			} else if t == 'f' {
 				v = a.p[0][j].F
-			}
-			if t == 'g' {
+			} else if t == 'g' {
 				v = a.p[0][j].G
 			}
-			fmt.Fprintf(w, "\t%g", v)
+			fmt.Fprintf(w, "\t%c%g", c, v)
 		}
 		fmt.Fprint(w, "\t\n")
 		for i := 1; i <= m; i++ {
 			fmt.Fprintf(w, "%c", q[i-1])
 			for j := 0; j <= n; j++ {
 				v := a.p[i][j].V
+				if v == a.p[i][j].E {
+					c = '^'
+				} else if v == a.p[i][j].F {
+					c = '<'
+				} else {
+					c = '\\'
+				}
+				if a.isLocal && v == 0 {
+					c = ' '
+				}
+				if i == 0 && j == 0 {
+					c = ' '
+				}
 				if t == 'e' {
-					v = a.p[i][j].E
+					v = a.p[0][j].E
+				} else if t == 'f' {
+					v = a.p[0][j].F
+				} else if t == 'g' {
+					v = a.p[0][j].G
 				}
-				if t == 'f' {
-					v = a.p[i][j].F
-				}
-				if t == 'g' {
-					v = a.p[i][j].G
-				}
-				fmt.Fprintf(w, "\t%g", v)
+				fmt.Fprintf(w, "\t%c%g", c, v)
 			}
 			fmt.Fprint(w, "\t\n")
 		}
@@ -354,14 +364,15 @@ func (a *alignment) PrintMatrix(t byte) string {
 		for p, c := range q {
 			fmt.Fprintf(buf, "%d %d\n", x, -y)
 			if c == '-' {
-				y++
-			} else if s[p] == '-' {
 				x++
+			} else if s[p] == '-' {
+				y++
 			} else {
 				x++
 				y++
 			}
 		}
+		fmt.Fprintf(buf, "%d %d\n", x, -y)
 		str = buf.String()
 	} else {
 		log.Fatalf("pal.PrintMatrix: can't print %c", t)
@@ -686,5 +697,6 @@ func NewLocalAlignment(q, s *fasta.Sequence,
 	gapO, gapE float64) *LocalAlignment {
 	la := new(LocalAlignment)
 	la.new(q, s, sm, gapO, gapE)
+	la.isLocal = true
 	return la
 }

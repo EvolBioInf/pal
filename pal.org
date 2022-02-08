@@ -952,9 +952,9 @@
   dynamic programming matrix.
 
   ! The method \ty{PrintMatrix} returns a pretty string version of the
-  ! dynamic programming matrix. It takes as argument the type of
-  ! printing desired, v, e, f, g for the cell elements, and t for trace
-  ! back.
+  ! dynamic programming matrix with back pointers. It takes as argument
+  ! the type of printing desired, v, e, f, g for the cell elements, and
+  ! t for trace back.
 #+end_src
 #+begin_src go <<Methods>>=
   func (a *alignment) PrintMatrix(t byte) string {
@@ -996,37 +996,12 @@
   "text/tabwriter"
 #+end_src
 #+begin_src latex
-  We extract the query and subject individually from the raw alignment sequences.
+  We extract the query and subject sequences without the gaps of the raw
+  alignment.
 #+end_src
 #+begin_src go <<Extract query and subject sequences>>=
-  //<<Extract query>>
-  //<<Extract subject>>
-#+end_src
-#+begin_src latex
-  We extract the query by squeezing out the gaps.
-#+end_src
-#+begin_src go <<Extract query>>=
-  i := 0
-  for _, c := range q {
-	  if c != '-' {
-		  q[i] = c
-		  i++
-	  }
-  }
-  q = q[:i]
-#+end_src
-#+begin_src latex
-  We apply the same reslicing to extract the subject.
-#+end_src
-#+begin_src go <<Extract subject>>=
-  i = 0
-  for _, c := range s {
-	  if c != '-' {
-		  s[i] = c
-		  i++
-	  }
-  }
-  s = s[:i]
+  q = a.q.Data()
+  s = a.s.Data()
 #+end_src
 #+begin_src latex
   The header of the matrix consists of a gap followed by the subject sequence.
@@ -1040,20 +1015,48 @@
 #+end_src
 #+begin_src latex
   The first row of the matrix is preceded by a gap followed by the
-  requested cell entry.
+  back pointer and the cell entry.
 #+end_src
 #+begin_src go <<Print first row of matrix>>=
   m := len(q)
   n := len(s)
   fmt.Fprint(w, "-")
-  for j := 0; j <= n; j++ {
-	  v := a.p[0][j].V
-	  if t == 'e' { v = a.p[0][j].E }
-	  if t == 'f' { v = a.p[0][j].F }
-	  if t == 'g' { v = a.p[0][j].G }
-	  fmt.Fprintf(w, "\t%g", v)
+  var c byte
+  for i, j := 0, 0; j <= n; j++ {
+	  v := a.p[i][j].V
+	  //<<Determine back pointer>>
+	  //<<Determine cell entry>>
+	  fmt.Fprintf(w, "\t%c%g", c, v)
   }
   fmt.Fprint(w, "\t\n")
+#+end_src
+#+begin_src latex
+  The back pointer is either vertical, horizontal, or diagonal. If its a
+  local alignment and the cell entry is zero, it is blank. Also, there
+  is no step back from the top left cell.
+#+end_src
+#+begin_src go <<Determine back pointer>>=
+  if v == a.p[i][j].E {
+	  c = '^'
+  } else if v == a.p[i][j].F {
+	  c = '<'
+  } else {
+	  c = '\\'
+  }
+  if a.isLocal && v == 0 { c = ' ' }
+  if i == 0 && j == 0 { c = ' '}
+#+end_src
+#+begin_src latex
+  The cell entry might be something other than $V$.
+#+end_src
+#+begin_src go <<Determine cell entry>>=
+  if t == 'e' {
+	  v = a.p[0][j].E
+  } else if t == 'f' {
+	  v = a.p[0][j].F
+  } else if t == 'g' {
+	  v = a.p[0][j].G
+  }
 #+end_src
 #+begin_src latex
   The remaining rows are prefixed by a query residue.
@@ -1063,10 +1066,9 @@
 	  fmt.Fprintf(w, "%c", q[i-1])
 	  for j := 0; j <= n; j++ {
 		  v := a.p[i][j].V
-		  if t == 'e' { v = a.p[i][j].E }
-		  if t == 'f' { v = a.p[i][j].F }
-		  if t == 'g' { v = a.p[i][j].G }
-		  fmt.Fprintf(w, "\t%g", v)
+		  //<<Determine back pointer>>
+		  //<<Determine cell entry>>
+		  fmt.Fprintf(w, "\t%c%g", c, v)
 	  }
 	  fmt.Fprint(w, "\t\n")
   }
@@ -1087,7 +1089,7 @@
   str = buf.String()
 #+end_src
 #+begin_src latex
-  We'd like to observe the convention that alignments start in the top
+  We'd like to observe the convention that matrices start in the top
   left hand corner, rather than the bottom left hand corner of
   graphs. We do this by setting the y coordinates negative.
 #+end_src
@@ -1095,14 +1097,15 @@
   for p, c := range q {
 	  fmt.Fprintf(buf, "%d %d\n", x, -y)
 	  if c == '-' {
-		  y++
-	  } else if s[p] == '-' {
 		  x++
+	  } else if s[p] == '-' {
+		  y++
 	  } else {
 		  x++
 		  y++
 	  }
   }
+  fmt.Fprintf(buf, "%d %d\n", x, -y)
 #+end_src
 #+begin_src latex
   \subsection{Data Structure \ty{GlobalAlignment}}
@@ -1461,8 +1464,15 @@
 	  gapO, gapE float64) *LocalAlignment {
 	  la := new(LocalAlignment)
 	  la.new(q, s, sm, gapO, gapE)
+	  la.isLocal = true
 	  return la
   }
+#+end_src
+#+begin_src latex
+  We declare the alignment field \ty{isLocal}.
+#+end_src
+#+begin_src go <<Alignment fields>>=
+  isLocal bool
 #+end_src
 #+begin_src latex
   \subsubsection{Method \ty{Align}}
