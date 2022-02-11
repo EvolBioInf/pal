@@ -549,6 +549,9 @@ func (a *LocalAlignment) Align() bool {
 		}
 		a.coords = append(a.coords, c)
 	} else if a.count == 2 {
+		a.qa = a.qa[:0]
+		a.sa = a.sa[:0]
+		a.coords = a.coords[:0]
 		var c coordinate
 		for i := 1; i <= m; i++ {
 			for j := 1; j <= n; j++ {
