@@ -1051,11 +1051,11 @@
 #+end_src
 #+begin_src go <<Determine cell entry>>=
   if t == 'e' {
-	  v = a.p[0][j].E
+	  v = a.p[i][j].E
   } else if t == 'f' {
-	  v = a.p[0][j].F
+	  v = a.p[i][j].F
   } else if t == 'g' {
-	  v = a.p[0][j].G
+	  v = a.p[i][j].G
   }
 #+end_src
 #+begin_src latex

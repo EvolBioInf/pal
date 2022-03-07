@@ -318,11 +318,11 @@ func (a *alignment) PrintMatrix(t byte) string {
 				c = ' '
 			}
 			if t == 'e' {
-				v = a.p[0][j].E
+				v = a.p[i][j].E
 			} else if t == 'f' {
-				v = a.p[0][j].F
+				v = a.p[i][j].F
 			} else if t == 'g' {
-				v = a.p[0][j].G
+				v = a.p[i][j].G
 			}
 			fmt.Fprintf(w, "\t%c%g", c, v)
 		}
@@ -345,11 +345,11 @@ func (a *alignment) PrintMatrix(t byte) string {
 					c = ' '
 				}
 				if t == 'e' {
-					v = a.p[0][j].E
+					v = a.p[i][j].E
 				} else if t == 'f' {
-					v = a.p[0][j].F
+					v = a.p[i][j].F
 				} else if t == 'g' {
-					v = a.p[0][j].G
+					v = a.p[i][j].G
 				}
 				fmt.Fprintf(w, "\t%c%g", c, v)
 			}
