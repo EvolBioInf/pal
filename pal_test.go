@@ -21,6 +21,11 @@ func TestScoreMatrix(t *testing.T) {
 	defer f.Close()
 	sm = ReadScoreMatrix(f)
 	get = append(get, sm.String())
+	sm = NewByteScoreMatrix(1, -3)
+	s1 := int(sm.Score(byte('_'), byte('_')))
+	s2 := int(sm.Score(byte('_'), byte('%')))
+	get = append(get, strconv.Itoa(s1))
+	get = append(get, strconv.Itoa(s2))
 	for i, _ := range get {
 		f := "data/sm" + strconv.Itoa(i+1) + ".txt"
 		b, err := ioutil.ReadFile(f)

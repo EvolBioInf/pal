@@ -77,7 +77,7 @@ func (s *ScoreMatrix) setScore(r1, r2 byte, sc float64) {
 	s.mat[i1][i2] = sc
 }
 
-// The method Score takes two characters as arguments and returns their score. If one of the characters is not a printing ASCII character, it exits with message.
+// The method Score takes two characters as arguments and returns their score. If one of the characters is not in the dictionary of residues, it exits with message.
 func (s *ScoreMatrix) Score(r1, r2 byte) float64 {
 	if r1 >= 97 {
 		r1 -= 32
@@ -620,8 +620,38 @@ func (c coordSlice) Less(i, j int) bool {
 // Function NewScoreMatrix generates a new score matrix from a match and a mismatch score.
 func NewScoreMatrix(match, mismatch float64) *ScoreMatrix {
 	sm := new(ScoreMatrix)
-	sm.dic = make(map[byte]int)
 	sm.res = "ARNDCQEGHIJLKMFPSTWYVBZX*U"
+	sm.dic = make(map[byte]int)
+	for i, r := range sm.res {
+		sm.dic[byte(r)] = i
+	}
+	n := len(sm.res)
+	sm.mat = make([][]float64, n)
+	for i := 0; i < n; i++ {
+		sm.mat[i] = make([]float64, n)
+	}
+	for i := 0; i < n; i++ {
+		sm.mat[i][i] = match
+	}
+	for i := 0; i < n-1; i++ {
+		for j := i + 1; j < n; j++ {
+			sm.mat[i][j] = mismatch
+			sm.mat[j][i] = mismatch
+		}
+	}
+	return sm
+}
+
+// Function NewByteScoreMatrix generates a new score matrix for all bytes from a match and a mismatch score.
+func NewByteScoreMatrix(match, mismatch float64) *ScoreMatrix {
+	sm := new(ScoreMatrix)
+	nr := 256
+	res := make([]byte, nr)
+	for i := 0; i < nr; i++ {
+		res[i] = byte(i)
+	}
+	sm.res = string(res)
+	sm.dic = make(map[byte]int)
 	for i, r := range sm.res {
 		sm.dic[byte(r)] = i
 	}

@@ -179,13 +179,14 @@
   \subsubsection{Function \ty{NewScoreMatrix}}
   !Function \ty{NewScoreMatrix} generates a new score matrix from a
   !match and a mismatch score.
-  We allocate space for the dictionary and fill it. Then we allocate
-  space for the matrix, fill-in the match scores, and fill-in the
-  mismatch scores.
+  We construct the residue string, allocate space for the dictionary and
+  fill it. Then we allocate space for the matrix, fill-in the match
+  scores, and fill-in the mismatch scores.
 #+end_src
 #+begin_src go <<Functions>>=
   func NewScoreMatrix(match, mismatch float64) *ScoreMatrix {
 	  sm := new(ScoreMatrix)
+	  //<<Construct residue string>>
 	  //<<Allocate dictionary>>
 	  //<<Fill-in dictionary>>
 	  //<<Allocate score matrix>>
@@ -195,20 +196,24 @@
   }
 #+end_src
 #+begin_src latex
+  The BLOSUM62 matrix in Figure~\ref{fig:scoreMat} contains 24
+  characters, the BLAST PAM70 matrix also lists \ty{J}. Nucleotide
+  sequences add one more, \ty{U} for uracil.
+#+end_src
+#+begin_src go <<Construct residue string>>=
+  sm.res = "ARNDCQEGHIJLKMFPSTWYVBZX*U"
+#+end_src
+#+begin_src latex
   We allocate the map holding the dictionary.
 #+end_src
 #+begin_src go <<Allocate dictionary>>=
   sm.dic = make(map[byte]int)
 #+end_src
 #+begin_src latex
-  The BLOSUM62 matrix in Figure~\ref{fig:scoreMat} contains 24
-  characters, the BLAST PAM70 matrix also lists \ty{J}. Nucleotide
-  sequences add one more, \ty{U} for uracil. We go through the
-  characters that can appear in molecular sequence and set the
+  We go through the characters in the residue string and set the
   corresponding index in the score matrix.
 #+end_src
 #+begin_src go <<Fill-in dictionary>>=
-  sm.res = "ARNDCQEGHIJLKMFPSTWYVBZX*U"
   for i, r := range sm.res {
 	  sm.dic[byte(r)] = i
   }
@@ -241,6 +246,36 @@
 		  sm.mat[j][i] = mismatch
 	  }
   }
+#+end_src
+#+begin_src latex
+  \subsubsection{Function \ty{NewByteScoreMatrix}}
+  !Function \ty{NewByteScoreMatrix} generates a new score matrix for
+  !all bytes from a match and a mismatch score.
+  We do this by constructing a new residue string and then reusing the
+  code for constructing the score matrix for molecular sequences.
+#+end_src
+#+begin_src go <<Functions>>=
+  func NewByteScoreMatrix(match, mismatch float64) *ScoreMatrix {
+	  sm := new(ScoreMatrix)
+	  //<<Construct byte string>>
+	  //<<Allocate dictionary>>
+	  //<<Fill-in dictionary>>
+	  //<<Allocate score matrix>>
+	  //<<Fill-in match scores>>
+	  //<<Fill-in mismatch scores>>
+	  return sm
+  }
+#+end_src
+#+begin_src latex
+  We construct the residue string from all 256 bytes.
+#+end_src
+#+begin_src go <<Construct byte string>>=
+  nr := 256
+  res := make([]byte, nr)
+  for i := 0; i < nr; i++ {
+	  res[i] = byte(i)
+  }
+  sm.res = string(res)
 #+end_src
 #+begin_src latex
   \subsubsection{Function \ty{ReadScores}}
@@ -356,8 +391,8 @@
 #+begin_src latex
   \subsubsection{Method \ty{Score}}
   !The method \texttt{Score} takes two characters as arguments and
-  !returns their score. If one of the characters is not a printing ASCII
-  !character, it exits with message.
+  !returns their score. If one of the characters is not in the
+  !dictionary of residues, it exits with message.
 
   We first check we have a pair of valid residues, then return the
   corresponding score.
