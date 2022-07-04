@@ -362,7 +362,7 @@ func (a *alignment) PrintMatrix(t byte) string {
 		x := a.ss
 		y := a.qs
 		for p, c := range q {
-			fmt.Fprintf(buf, "%d %d\n", x, -y)
+			fmt.Fprintf(buf, "%d %d\n", x, y)
 			if c == '-' {
 				x++
 			} else if s[p] == '-' {
@@ -372,7 +372,7 @@ func (a *alignment) PrintMatrix(t byte) string {
 				y++
 			}
 		}
-		fmt.Fprintf(buf, "%d %d\n", x, -y)
+		fmt.Fprintf(buf, "%d %d\n", x, y)
 		str = buf.String()
 	} else {
 		log.Fatalf("pal.PrintMatrix: can't print %c", t)

@@ -1124,13 +1124,11 @@
   str = buf.String()
 #+end_src
 #+begin_src latex
-  We'd like to observe the convention that matrices start in the top
-  left hand corner, rather than the bottom left hand corner of
-  graphs. We do this by setting the y coordinates negative.
+  We'd print the y coordinates.
 #+end_src
 #+begin_src go <<Print x/y  coordinates>>=
   for p, c := range q {
-	  fmt.Fprintf(buf, "%d %d\n", x, -y)
+	  fmt.Fprintf(buf, "%d %d\n", x, y)
 	  if c == '-' {
 		  x++
 	  } else if s[p] == '-' {
@@ -1140,7 +1138,7 @@
 		  y++
 	  }
   }
-  fmt.Fprintf(buf, "%d %d\n", x, -y)
+  fmt.Fprintf(buf, "%d %d\n", x, y)
 #+end_src
 #+begin_src latex
   \subsection{Data Structure \ty{GlobalAlignment}}
