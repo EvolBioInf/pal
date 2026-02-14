@@ -1,4 +1,4 @@
-//  Package pal implements data structures, methods, and functions  for computing and printing optimal pairwise alignments.
+// Package pal implements data structures, methods, and functions  for computing and printing optimal pairwise alignments.
 package pal
 
 import (
@@ -14,7 +14,7 @@ import (
 	"text/tabwriter"
 )
 
-//  A ScoreMatrix stores the scores of residue pairs.
+// A ScoreMatrix stores the scores of residue pairs.
 type ScoreMatrix struct {
 	res string
 	mat [][]float64
@@ -138,7 +138,7 @@ func (a *alignment) new(q, s *fasta.Sequence,
 	a.coords = make([]coordinate, 0)
 }
 
-//  The Method ProgrammingMatrix returns the (m+1) x (n+1) matrix  used for calculating an alignment of two sequences of lengths m and  n.
+// The Method ProgrammingMatrix returns the (m+1) x (n+1) matrix  used for calculating an alignment of two sequences of lengths m and  n.
 func (a *alignment) ProgrammingMatrix() [][]Cell {
 	return a.p
 }
@@ -284,7 +284,7 @@ func (a *alignment) SetSubjectLength(l int) {
 	a.sl = l
 }
 
-//  The method PrintMatrix returns a pretty string version of the  dynamic programming matrix with back pointers. It takes as argument  the type of printing desired, v, e, f, g for the cell elements, and  t for trace back.
+// The method PrintMatrix returns a pretty string version of the  dynamic programming matrix with back pointers. It takes as argument  the type of printing desired, v, e, f, g for the cell elements, and  t for trace back.
 func (a *alignment) PrintMatrix(t byte) string {
 	q, s := a.RawAlignment()
 	str := ""
@@ -549,8 +549,6 @@ func (a *LocalAlignment) Align() bool {
 		}
 		a.coords = append(a.coords, c)
 	} else if a.count == 2 {
-		a.qa = a.qa[:0]
-		a.sa = a.sa[:0]
 		a.coords = a.coords[:0]
 		var c coordinate
 		for i := 1; i <= m; i++ {
@@ -566,6 +564,8 @@ func (a *LocalAlignment) Align() bool {
 		sort.Sort(coordSlice(a.coords))
 	}
 	found := false
+	a.qa = a.qa[:0]
+	a.sa = a.sa[:0]
 	for k, c := range a.coords {
 		i := c.i
 		j := c.j

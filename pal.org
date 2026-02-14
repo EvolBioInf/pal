@@ -1618,23 +1618,14 @@
   a.coords = append(a.coords, c)
 #+end_src
 #+begin_src latex
-  In preparation of all subsequent alignments, we reset the previous
-  alignment, store all possible alignment starting points of the new
-  alignment, and sort them.
+  In preparation of all subsequent alignments, we erase the starting
+  points of the previous alignment, store all possible alignment
+  starting points of the new alignments, and sort them.
 #+end_src
 #+begin_src go <<Prepare subsequent alignments>>=
-  //<<Reset previous alignment>>
+  a.coords = a.coords[:0]
   //<<Store alignment starting points>>
   //<<Sort alignment starting points>>
-#+end_src
-#+begin_src latex
-  We erase the previous query and subject alignments and their starting
-  points.
-#+end_src
-#+begin_src go <<Reset previous alignment>>=
-  a.qa = a.qa[:0]
-  a.sa = a.sa[:0]
-  a.coords = a.coords[:0]
 #+end_src
 #+begin_src latex
   A legitimate local alignment doesn't intersect the paths of previous
@@ -1699,11 +1690,14 @@
   "sort"
 #+end_src
 #+begin_src latex
-  We iterate over the coordinates and run a trace back from each one. If
-  the trace back was successful, i. e. we found an alignment, we lop off
-  the coordinates we've used up and break from the loop.
+  We reset the alignments. Then we iterate over the coordinates and run
+  a trace back from each one. If the trace back was successful, i. e. we
+  found an alignment, we lop off the coordinates we've used up and break
+  from the loop.
 #+end_src
 #+begin_src go <<Find alignment>>=
+  a.qa = a.qa[:0]
+  a.sa = a.sa[:0]
   for k, c := range a.coords {
 	  i := c.i
 	  j := c.j
@@ -1755,4 +1749,7 @@
   a.ss = j
   a.reverse()
   a.errors()
+#+end_src
+#+begin_src latex
+  We reset the alignment strings to empty.
 #+end_src
