@@ -5,5 +5,7 @@ doc/*.pdf
 doc/*.toc
 doc/*.bbl
 doc/*.blg
+doc/date.txt
 doc/pal_test.tex
 doc/pal.tex
+doc/version.txt
